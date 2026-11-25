@@ -30,6 +30,13 @@ const USAGE = `dsh-event-fix — DSH step 级无效动作统计
   -h, --help        显示帮助
 `
 
+class CliError extends Error {
+  constructor(message, exitCode = 1) {
+    super(message)
+    this.exitCode = exitCode
+  }
+}
+
 function parseArgs(argv) {
   const args = { command: 'scan', root: null, since: null, session: null, limit: null, html: null, json: null, quiet: false }
   for (let index = 0; index < argv.length; index += 1) {
@@ -40,7 +47,17 @@ function parseArgs(argv) {
       continue
     }
     const [flag, inline] = token.includes('=') ? token.split(/=(.*)/su, 2) : [token, undefined]
+    if (flag === '--quiet') {
+      args.quiet = true
+      continue
+    }
+    if (!['--root', '--since', '--session', '--limit', '--html', '--json'].includes(flag)) {
+      throw new Error(`未知参数 ${flag}`)
+    }
     const value = inline ?? argv[++index]
+    if (value === undefined || value.trim() === '') {
+      throw new Error(`dsh-event-fix: ${flag} requires a value`)
+    }
     switch (flag) {
       case '--root': args.root = value; break
       case '--since': args.since = value; break
@@ -48,8 +65,6 @@ function parseArgs(argv) {
       case '--limit': args.limit = Number(value); break
       case '--html': args.html = value; break
       case '--json': args.json = value; break
-      case '--quiet': args.quiet = true; break
-      default: throw new Error(`未知参数 ${flag}`)
     }
   }
   return args
@@ -57,8 +72,18 @@ function parseArgs(argv) {
 
 function scan(options) {
   const root = resolveSessionsRoot(options.root)
-  const since = parseSince(options.since)
-  let files = listSessionFiles(root)
+  let since
+  try {
+    since = parseSince(options.since)
+  } catch (error) {
+    throw new CliError(error.message, 2)
+  }
+  let files
+  try {
+    files = listSessionFiles(root)
+  } catch (error) {
+    throw new CliError(error.message, 1)
+  }
   if (since !== null) files = files.filter(file => file.mtime >= since)
   if (options.session !== null) files = files.filter(file => file.sessionId === options.session)
   if (Number.isSafeInteger(options.limit) && options.limit > 0) files = files.slice(0, options.limit)
@@ -114,7 +139,18 @@ function main() {
     return
   }
 
-  const { report, root, scanned } = scan(args)
+  let result
+  try {
+    result = scan(args)
+  } catch (error) {
+    if (error instanceof CliError) {
+      process.stderr.write(`${error.message}\n`)
+      process.exitCode = error.exitCode
+      return
+    }
+    throw error
+  }
+  const { report, root, scanned } = result
   if (!args.quiet) {
     process.stdout.write(`${renderTextReport(report)}\n`)
     process.stdout.write(`\n扫描 ${scanned} 个会话文件 · 根目录 ${root}\n`)
