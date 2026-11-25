@@ -200,6 +200,8 @@ export function parseSince(value, now = Date.now()) {
     return now - amount * unitMs
   }
   const parsed = Date.parse(text)
-  if (Number.isNaN(parsed)) throw new Error(`dsh-event-fix: cannot parse --since ${text}`)
+  if (Number.isNaN(parsed)) {
+    throw new Error(`dsh-event-fix: cannot parse --since ${text} (expected e.g. 7d, 24h, or 2026-11-01)`)
+  }
   return parsed
 }
