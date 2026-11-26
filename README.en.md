@@ -36,6 +36,7 @@ See [QUICKSTART.md](docs/QUICKSTART.md) for a five-minute walkthrough and troubl
 ## CLI
 
 ```powershell
+dsh-event-fix --version
 dsh-event-fix scan
 dsh-event-fix scan --since 7d --html .\reports\report.html
 dsh-event-fix scan --json .\reports\report.json --quiet

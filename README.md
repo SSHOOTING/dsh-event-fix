@@ -186,6 +186,7 @@ navigator.clipboard.writeText()     →  两者都不可用时退回剪贴板
 node bin/dsh-event-fix.mjs scan
 
 # 最近 7 天 + 生成离线面板
+node bin/dsh-event-fix.mjs --version
 node bin/dsh-event-fix.mjs scan --since 7d --html .\reports\report.html
 
 # 导出机器可读结果

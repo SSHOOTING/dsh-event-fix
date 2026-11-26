@@ -9,6 +9,7 @@
  *   dsh-event-fix scan --session <id>         # 只看一个会话
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
+import manifest from '../package.json' with { type: 'json' }
 import { dirname, resolve } from 'node:path'
 import { sessionView, summarizeRecords } from '../src/analyzer.js'
 import { buildReport, renderHtmlReport, renderTextReport } from '../src/report.js'
@@ -27,6 +28,7 @@ const USAGE = `dsh-event-fix — DSH step 级无效动作统计
   --html <path>     生成离线 HTML 面板
   --json <path>     导出 JSON 结果
   --quiet           只输出结果路径，不打印摘要
+  --version         显示版本号
   -h, --help        显示帮助
 `
 
@@ -34,6 +36,7 @@ function parseArgs(argv) {
   const args = { command: 'scan', root: null, since: null, session: null, limit: null, html: null, json: null, quiet: false }
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
+    if (token === '--version') return { version: true }
     if (token === '-h' || token === '--help') return { help: true }
     if (!token.startsWith('--')) {
       args.command = token
@@ -102,6 +105,10 @@ function main() {
   } catch (error) {
     process.stderr.write(`${error.message}\n\n${USAGE}`)
     process.exitCode = 2
+    return
+  }
+  if (args.version === true) {
+    process.stdout.write(`${manifest.version}\n`)
     return
   }
   if (args.help === true || args.command === 'help') {
